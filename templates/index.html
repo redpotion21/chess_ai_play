@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Python Chess vs AI</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- jQuery (required for chessboard.js) -->
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+    <!-- Chessboard.js CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+</head>
+<body class="bg-slate-900 text-white flex flex-col items-center justify-center min-h-screen">
+    <div class="text-3xl font-bold mb-6">Python Chess vs AI</div>
+    
+    <div class="flex gap-8 items-start bg-slate-800 p-6 rounded-xl shadow-2xl border border-slate-700">
+        <!-- Interactive Chessboard -->
+        <div id="board" style="width: 420px"></div>
+        
+        <!-- Sidebar Controls & Status -->
+        <div class="w-64 flex flex-col gap-4">
+            <div class="bg-slate-900 p-4 rounded-lg border border-slate-700">
+                <h2 class="text-lg font-semibold text-emerald-400 mb-2">Game Status</h2>
+                <div id="status" class="text-sm text-slate-300">Your turn (White). Drag or click pieces to move.</div>
+            </div>
+            <button id="reset-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-4 rounded-lg transition shadow">
+                Restart Game
+            </button>
+        </div>
+    </div>
+
+    <script>
+        var board = null;
+        var gameFen = "{{ fen }}";
+
+        function onDragStart (source, piece, position, orientation) {
+            // Prevent moving black pieces (Human plays White)
+            if (piece.search(/^b/) !== -1) return false;
+        }
+
+        function onDrop (source, target) {
+            var moveStr = source + target;
+            
+            // Simple pawn promotion handler to Queen
+            if (source.endsWith('7') && target.endsWith('8')) {
+                var piece = board.position()[source];
+                if (piece === 'wP') {
+                    moveStr += 'q';
+                }
+            }
+
+            // Send move to Python backend
+            $.ajax({
+                type: 'POST',
+                url: '/move',
+                contentType: 'application/json',
+                data: JSON.stringify({ move: moveStr }),
+                success: function(response) {
+                    if (response.status === 'ok') {
+                        board.position(response.fen);
+                        if (response.game_over) {
+                            $('#status').text('Game Over! Result: ' + response.result);
+                        } else {
+                            $('#status').text('AI played. Your turn.');
+                        }
+                    }
+                },
+                error: function(xhr) {
+                    $('#status').text('Invalid move! Try again.');
+                    board.position(response.fen);
+                    return 'snapback';
+                }
+            });
+        }
+
+        var config = {
+            draggable: true,
+            position: gameFen,
+            onDragStart: onDragStart,
+            onDrop: onDrop,
+            pieceTheme: 'https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/img/chesspieces/wikipedia/{piece}.png'
+        };
+
+        board = Chessboard('board', config);
+
+        $('#reset-btn').on('click', function() {
+            $.post('/reset', function(response) {
+                board.position(response.fen);
+                $('#status').text('New game started. Your turn.');
+            });
+        });
+    </script>
+</body>
+</html>
