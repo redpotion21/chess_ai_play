@@ -26,7 +26,7 @@ class ChessWindow(QMainWindow):
         self.setFixedSize(500, 580)
 
         self.board = chess.Board()
-        self.ai = MMQSPST(name="MMQSPST", depth=3)
+        self.ai = MMQSPST(name="MMQSPST", depth=4)
         self.human_color = chess.WHITE
         
         self.selected_square = None
