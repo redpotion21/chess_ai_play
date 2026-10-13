@@ -6,7 +6,8 @@ class MMQSPST:
     Transposition Table (TT) with Zobrist FEN hashing,
     Piece-Square Tables (PST) with Tapered King Evaluation,
     Move Ordering (MVV-LVA / Transposition Move),
-    Quiescence Search for tactile tactical evaluation.
+    Quiescence Search for tactile tactical evaluation,
+    and Threefold Repetition Draw Consideration.
     """
     EXACT, LOWERBOUND, UPPERBOUND = 0, 1, 2
 
@@ -100,7 +101,8 @@ class MMQSPST:
         }
 
     def evaluate_board(self, board: chess.Board) -> int:
-        if board.is_stalemate() or board.is_insufficient_material():
+        # Added threefold repetition check to evaluation draws
+        if board.is_stalemate() or board.is_insufficient_material() or board.is_repetition(3):
             return 0
 
         score = 0
@@ -175,6 +177,10 @@ class MMQSPST:
         return alpha
 
     def negamax(self, board: chess.Board, depth: int, alpha: int, beta: int, color: int) -> int:
+        # Check for threefold repetition at the start of search nodes
+        if board.is_repetition(3):
+            return 0
+
         original_alpha = alpha
         hash_key = board.fen()
         hash_move = None
