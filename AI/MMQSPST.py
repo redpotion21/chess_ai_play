@@ -107,6 +107,16 @@ class MMQSPST:
 
         score = 0
         phase = 0
+        castling_bonus = 30
+        if board.has_kingside_castling_rights(chess.WHITE):
+            score += castling_bonus
+        if board.has_queenside_castling_rights(chess.WHITE):
+            score += castling_bonus // 2
+            
+        if board.has_kingside_castling_rights(chess.BLACK):
+            score -= castling_bonus
+        if board.has_queenside_castling_rights(chess.BLACK):
+            score -= castling_bonus // 2
 
         for square, piece in board.piece_map().items():
             pt = piece.piece_type
