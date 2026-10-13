@@ -1,6 +1,8 @@
 import sys
+from datetime import datetime
 import chess
 import chess.svg
+import chess.pgn
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QHBoxLayout
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtCore import Qt, QByteArray, Signal
@@ -133,7 +135,30 @@ class ChessWindow(QMainWindow):
             reason = "Stalemate"
         elif self.board.is_insufficient_material():
             reason = "Insufficient Material"
+        
         self.status_label.setText(f"Game Over! Result: {result} ({reason})")
+        self.save_game_to_pgn()
+
+    def save_game_to_pgn(self):
+        # Create game from board move stack
+        game = chess.pgn.Game.from_board(self.board)
+        
+        # Set up standard PGN headers
+        game.headers["Event"] = "Python Chess vs AI"
+        game.headers["White"] = "Human"
+        game.headers["Black"] = self.ai.name
+        game.headers["Date"] = datetime.now().strftime("%Y.%m.%d")
+        game.headers["Result"] = self.board.result()
+
+        # Build filename: current date, time, and AI name
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+        filename = f"{timestamp}_{self.ai.name}.pgn"
+
+        # Write to file
+        with open(filename, "w", encoding="utf-8") as pgn_file:
+            print(game, file=pgn_file)
+        
+        print(f"Game successfully saved to {filename}")
 
     def restart_game(self):
         self.board = chess.Board()
